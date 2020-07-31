@@ -7,7 +7,9 @@ cp sample.env .env
 
 docker build -t tp .
 
-docker run -p 8080:8080 --name=tp  --rm -it tp
+docker run -d -p 80:8080 --name=tp  --rm -it tp
 
-docker rm tp
+docker logs -f tp
+
+docker stop tp
 ```
