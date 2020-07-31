@@ -110,11 +110,11 @@ func (f *Flow) Initialize() {
 	var apiSecret string
 	isTestnet := viper.GetBool("IS_TESTNET")
 	if isTestnet {
-		apiKey = viper.GetString("API_KEY")
-		apiSecret = viper.GetString("API_SECRET")
-	} else {
 		apiKey = viper.GetString("API_KEY_TESTNET")
 		apiSecret = viper.GetString("API_SECRET_TESTNET")
+	} else {
+		apiKey = viper.GetString("API_KEY")
+		apiSecret = viper.GetString("API_SECRET")
 	}
 
 	f.auth = bitmexgo.NewAPIKeyContext(apiKey, apiSecret)
