@@ -7,7 +7,5 @@ import (
 
 func main() {
 	core.Run()
-	go core.Q.Dequeue()
-	core.RunFlow()
 	api.Run()
 }

@@ -1,4 +1,4 @@
-package core
+package account
 
 import (
 	"context"
@@ -135,7 +135,7 @@ func (f *Flow) Initialize() {
 
 func (f *Flow) HandleQueueItem(payload Payload) {
 	println("############################")
-	println("Received signal HERE", payload.Signal)
+	println("Received signal", payload.Signal)
 	println("############################")
 
 	accountState := f.FetchAccountState()
@@ -145,8 +145,4 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 	if accountState.PositionSize > 0 {
 		f.OrderMarket(accountState)
 	}
-}
-
-func RunFlow() {
-	F.Initialize()
 }

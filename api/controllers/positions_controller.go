@@ -5,7 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	core "github.com/reposandermets/take-positions/internal"
+	"github.com/reposandermets/take-positions/internal/account"
+	"github.com/reposandermets/take-positions/internal/queue"
 
 	"github.com/reposandermets/take-positions/api/responses"
 )
@@ -19,7 +20,7 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload := core.Payload{}
+	payload := account.Payload{}
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		println(err.Error())
@@ -27,10 +28,10 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Signal == "Buy" {
-		core.Q.Enqueue(payload)
+		queue.Q.Enqueue(payload)
 	}
 }
 
 func (server *Server) GetPosition(w http.ResponseWriter, r *http.Request) {
-	responses.JSON(w, http.StatusOK, core.F.FetchAccountState())
+	responses.JSON(w, http.StatusOK, account.F.FetchAccountState())
 }

@@ -7,9 +7,9 @@ type Signal struct {
 	Type     string `json:"type"`
 }
 
-type RequestContext struct {
-	Ticker   string
-	Exchange string
-	Signal   string
-	Type     string
-}
+// type RequestContext struct {
+// 	Ticker   string
+// 	Exchange string
+// 	Signal   string
+// 	Type     string
+// }

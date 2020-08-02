@@ -1,8 +1,10 @@
-package core
+package queue
 
 import (
 	"container/list"
 	"time"
+
+	"github.com/reposandermets/take-positions/internal/account"
 )
 
 var Q = Queue{}
@@ -12,7 +14,7 @@ func (q *Queue) Initialize() {
 	println("Queue initialized")
 }
 
-func (q *Queue) Enqueue(p Payload) {
+func (q *Queue) Enqueue(p account.Payload) {
 	q.queue.PushBack(p)
 }
 
@@ -21,14 +23,10 @@ func (q *Queue) Dequeue() {
 		time.Sleep(333 * time.Millisecond)
 		e := q.queue.Front()
 		if e != nil {
-			var payload Payload
-			payload = e.Value.(Payload)
-			F.HandleQueueItem(payload)
+			var payload account.Payload
+			payload = e.Value.(account.Payload)
+			account.F.HandleQueueItem(payload)
 			q.queue.Remove(e)
 		}
 	}
-}
-
-func Run() {
-	Q.Initialize()
 }

@@ -1,14 +1,8 @@
-package core
+package account
 
 import (
-	"container/list"
-
 	"github.com/zmxv/bitmexgo"
 )
-
-type Queue struct {
-	queue *list.List
-}
 
 type Payload struct {
 	Ticker   string `json:"ticker"`
