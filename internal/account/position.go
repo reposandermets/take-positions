@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/zmxv/bitmexgo"
@@ -15,14 +16,15 @@ type Flow struct {
 
 var F = Flow{}
 
-func (f *Flow) FetchAccountState() (accountState AccountState) {
+func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 	cPosition := make(chan PositionState)
 	cMargin := make(chan MarginState)
 	cTradeBin := make(chan TradeBinState)
+	cTradeBinEth := make(chan TradeBinEthState)
 
 	go func() {
 		var params bitmexgo.PositionGetOpts
-		params.Filter.Set("{\"symbol\":\"XBTUSD\"}")
+		params.Filter.Set("{\"symbol\":\"" + symbol + "\"}")
 		positions, _, err := f.apiClient.PositionApi.PositionGet(f.auth, &params)
 		var position bitmexgo.Position
 		side := ""
@@ -56,6 +58,23 @@ func (f *Flow) FetchAccountState() (accountState AccountState) {
 		var params bitmexgo.TradeGetBucketedOpts
 		params.BinSize.Set("1m")
 		params.Partial.Set(true)
+		params.Symbol.Set("ETHUSD")
+		params.Reverse.Set(true)
+		tradeBins, _, err := f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
+		var tradeBin bitmexgo.TradeBin
+		if len(tradeBins) > 0 {
+			tradeBin = tradeBins[0]
+		}
+		cTradeBinEth <- TradeBinEthState{
+			TradeBinEth: tradeBin,
+			Error:       err,
+		}
+	}()
+
+	go func() {
+		var params bitmexgo.TradeGetBucketedOpts
+		params.BinSize.Set("1m")
+		params.Partial.Set(true)
 		params.Symbol.Set("XBTUSD")
 		params.Reverse.Set(true)
 		tradeBins, _, err := f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
@@ -69,31 +88,38 @@ func (f *Flow) FetchAccountState() (accountState AccountState) {
 		}
 	}()
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 4; i++ {
 		select {
+
 		case msgPosition := <-cPosition:
 			accountState.Side = msgPosition.Side
 			accountState.HasOpenPosition = msgPosition.HasOpenPosition
 			accountState.Position = msgPosition.Position
 			accountState.PositionError = msgPosition.Error
+
 		case msgMargin := <-cMargin:
 			accountState.Margin = msgMargin.Margin
 			accountState.MarginError = msgMargin.Error
+
 		case msgTradeBin := <-cTradeBin:
 			accountState.TradeBin = msgTradeBin.TradeBin
 			accountState.TradeBinError = msgTradeBin.Error
+
+		case msgTradeBinEth := <-cTradeBinEth:
+			accountState.TradeBinEth = msgTradeBinEth.TradeBinEth
+			accountState.TradeBinEthError = msgTradeBinEth.Error
 		}
 	}
 
 	return accountState
 }
 
-func (f *Flow) OrderMarket(accountState AccountState) {
+func (f *Flow) OrderMarket(accountState AccountState, payload Payload) {
 	var params bitmexgo.OrderNewOpts
 	params.OrdType.Set("Market")
-	params.Side.Set(accountState.Side)
+	params.Side.Set(payload.Signal)
 	params.OrderQty.Set(accountState.PositionSize)
-	order, _, err := f.apiClient.OrderApi.OrderNew(f.auth, "XBTUSD", &params)
+	order, _, err := f.apiClient.OrderApi.OrderNew(f.auth, payload.Ticker, &params)
 	if err != nil {
 		println("OrderMarket error", err.Error())
 	} else {
@@ -128,21 +154,31 @@ func (f *Flow) Initialize() {
 
 	f.strategyConfig = StrategyConfig{
 		StepsAllowed:             viper.GetFloat64("STEPS_ALLOWED"),
-		LeverageAllowed:          viper.GetFloat64("LEVERAGE_ALLOWED"),
+		LeverageAllowed:          viper.GetFloat64("LEVERAGE_ALLOWED_BUY"),
 		LossPercentageForReEntry: viper.GetFloat64("LOSS_PERCENTAGE_FOR_RE_ENTRY"),
 	}
 }
 
 func (f *Flow) HandleQueueItem(payload Payload) {
+	payload.Ticker = strings.Replace(payload.Ticker, "/", "", -1)
 	println("############################")
-	println("Received signal", payload.Signal)
+	println("Received signal", payload.Signal, " ", payload.Ticker)
 	println("############################")
 
-	accountState := f.FetchAccountState()
+	if payload.Type != "4hTrend" { // TODO get from ENV
+		println("Signal type mismatch: ", payload.Type)
+		return
+	}
+	accountState := f.FetchAccountState(payload.Ticker)
+	println("HasOpenPosition ", accountState.HasOpenPosition)
 
-	accountState.PositionSize, accountState.ProfitPercentage = CalculatePositionSize(accountState, f.strategyConfig)
+	if accountState.Side != "" && accountState.Side != payload.Signal {
+		println("Signal and position side mismatch, position side: ", accountState.Side)
+		return
+	}
+	accountState.PositionSize, accountState.ProfitPercentage = CalculatePositionSize(accountState, f.strategyConfig, payload)
 	println(accountState.PositionSize)
 	if accountState.PositionSize > 0 {
-		f.OrderMarket(accountState)
+		f.OrderMarket(accountState, payload)
 	}
 }

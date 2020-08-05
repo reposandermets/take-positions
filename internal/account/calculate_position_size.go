@@ -16,7 +16,7 @@ func FormatFloat(num float64) string {
 	return strings.TrimRight(strings.TrimRight(str, zero), dot)
 }
 
-func CalculatePositionSize(accountState AccountState, strategyConfig StrategyConfig) (positionSize int, profitPercentage float64) {
+func CalculatePositionSize(accountState AccountState, strategyConfig StrategyConfig, payload Payload) (positionSize int, profitPercentage float64) {
 	leverageRequiredForStep := strategyConfig.LeverageAllowed / strategyConfig.StepsAllowed
 	leverageAvailable := strategyConfig.LeverageAllowed - accountState.Margin.MarginLeverage
 	hasNotEnoughLeverageLeft := leverageRequiredForStep > leverageAvailable &&
@@ -49,8 +49,15 @@ func CalculatePositionSize(accountState AccountState, strategyConfig StrategyCon
 		}
 	}
 
-	wallet := float64(accountState.Margin.WalletBalance) / 100000000
-	positionSize = int(math.Floor(wallet * accountState.TradeBin.Close * leverageRequiredForStep))
-
+	xbtWallet := float64(accountState.Margin.WalletBalance) / 100000000
+	if payload.Ticker == "XBTUSD" {
+		positionSize = int(math.Floor(xbtWallet * accountState.TradeBin.Close * leverageRequiredForStep))
+	} else if payload.Ticker == "ETHUSD" {
+		contractValue := accountState.TradeBinEth.Close / 1000000
+		println("ETHUSD contract value: ", contractValue)
+		availableContracts := xbtWallet / contractValue
+		println("ETHUSD available contracts: ", availableContracts)
+		positionSize = int(math.Floor(availableContracts * leverageRequiredForStep))
+	}
 	return positionSize, profitPercentage
 }

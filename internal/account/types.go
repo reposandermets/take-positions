@@ -22,6 +22,8 @@ type AccountState struct {
 	MarginError      error
 	TradeBin         bitmexgo.TradeBin
 	TradeBinError    error
+	TradeBinEth      bitmexgo.TradeBin
+	TradeBinEthError error
 }
 
 type PositionState struct {
@@ -39,6 +41,11 @@ type MarginState struct {
 type TradeBinState struct {
 	TradeBin bitmexgo.TradeBin
 	Error    error
+}
+
+type TradeBinEthState struct {
+	TradeBinEth bitmexgo.TradeBin
+	Error       error
 }
 
 type StrategyConfig struct {

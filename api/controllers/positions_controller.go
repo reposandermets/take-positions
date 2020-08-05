@@ -27,11 +27,9 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.Signal == "Buy" {
-		queue.Q.Enqueue(payload)
-	}
+	queue.Q.Enqueue(payload)
 }
 
 func (server *Server) GetPosition(w http.ResponseWriter, r *http.Request) {
-	responses.JSON(w, http.StatusOK, account.F.FetchAccountState())
+	responses.JSON(w, http.StatusOK, account.F.FetchAccountState("ETHUSD"))
 }
