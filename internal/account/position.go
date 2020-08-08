@@ -108,12 +108,16 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 		}
 
 		if err == nil && res.StatusCode >= 200 && res.StatusCode < 300 {
-			time.Sleep(333 * time.Millisecond)
+			time.Sleep(1333 * time.Millisecond)
 			accountState = f.FetchAccountState(payload.Ticker)
 
 			if accountState.MarginError != nil || accountState.PositionError != nil || accountState.TradeBinError != nil || accountState.TradeBinEthError != nil {
 				println("ERROR accountState after market order about to retry", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
 				time.Sleep(3333 * time.Millisecond)
+				accountState = f.FetchAccountState(payload.Ticker)
+			} else if !accountState.HasOpenPosition {
+				println("WARNING no open position after market order, about to retry")
+				time.Sleep(1333 * time.Millisecond)
 				accountState = f.FetchAccountState(payload.Ticker)
 			}
 
