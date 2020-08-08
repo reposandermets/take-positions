@@ -5,10 +5,12 @@ import (
 )
 
 type Payload struct {
-	Ticker   string `json:"ticker"`
-	Exchange string `json:"exchange"`
-	Signal   string `json:"signal"`
-	Type     string `json:"type"`
+	Ticker   string  `json:"ticker"`
+	Exchange string  `json:"exchange"`
+	Signal   string  `json:"signal"`
+	Type     string  `json:"type"`
+	SlPerc   float64 `json:"sl_perc"`
+	TpPerc   float64 `json:"tp_perc"`
 }
 
 type AccountState struct {

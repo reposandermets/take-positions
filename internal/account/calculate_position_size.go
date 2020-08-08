@@ -19,9 +19,12 @@ func FormatFloat(num float64) string {
 func CalculatePositionSize(accountState AccountState, strategyConfig StrategyConfig, payload Payload) (positionSize int, profitPercentage float64) {
 	leverageRequiredForStep := strategyConfig.LeverageAllowed / strategyConfig.StepsAllowed
 	leverageAvailable := strategyConfig.LeverageAllowed - accountState.Margin.MarginLeverage
+
 	hasNotEnoughLeverageLeft := leverageRequiredForStep > leverageAvailable &&
 		math.Abs(profitPercentage-strategyConfig.LossPercentageForReEntry) > 1e-6
+
 	println("leverageRequiredForStep", leverageRequiredForStep)
+
 	if hasNotEnoughLeverageLeft {
 		println("leverageAvailable ", leverageAvailable)
 		println("leverageRequiredForStep ", leverageRequiredForStep)
@@ -59,5 +62,6 @@ func CalculatePositionSize(accountState AccountState, strategyConfig StrategyCon
 		println("ETHUSD available contracts: ", availableContracts)
 		positionSize = int(math.Floor(availableContracts * leverageRequiredForStep))
 	}
+
 	return positionSize, profitPercentage
 }
