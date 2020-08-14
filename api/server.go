@@ -12,7 +12,7 @@ func Run() {
 	viper.ReadInConfig()
 	viper.AutomaticEnv()
 	println("STEPS_ALLOWED: ", int(viper.GetFloat64("STEPS_ALLOWED")))
-	println("LEVERAGE_ALLOWED: ", int(viper.GetFloat64("LEVERAGE_ALLOWED")))
+	println("LEVERAGE_ALLOWED_BUY: ", int(viper.GetFloat64("LEVERAGE_ALLOWED_BUY")))
 	println("LOSS_PERCENTAGE_FOR_RE_ENTRY: ", viper.GetFloat64("LOSS_PERCENTAGE_FOR_RE_ENTRY"))
 	println("IS_TESTNET: ", viper.GetBool("IS_TESTNET"))
 	server.Initialize()

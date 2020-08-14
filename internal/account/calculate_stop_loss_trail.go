@@ -2,7 +2,7 @@ package account
 
 import "math"
 
-func CalculateSlTp(accountState AccountState, payload Payload) (sl float64, tp float64) {
+func CalculateSlTpTrail(accountState AccountState, payload Payload) (sl float64, tp float64, trail float64) {
 
 	if payload.SlPerc > 0 {
 		if payload.Ticker == "ETHUSD" {
@@ -28,5 +28,14 @@ func CalculateSlTp(accountState AccountState, payload Payload) (sl float64, tp f
 		}
 	}
 
-	return sl, tp
+	if payload.TrailPerc > 0 {
+		if payload.Ticker == "ETHUSD" {
+			trail = math.Round(accountState.Position.AvgEntryPrice*payload.TrailPerc/10) / 10
+			if accountState.Side == "Buy" {
+				trail = 0 - trail
+			}
+		}
+	}
+
+	return sl, tp, trail
 }

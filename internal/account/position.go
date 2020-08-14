@@ -128,19 +128,20 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 			}
 
 			// calculate stop loss
-			sl, tp := CalculateSlTp(accountState, payload)
+			sl, tp, trail := CalculateSlTpTrail(accountState, payload)
 			println("SL ", sl)
 			println("TP ", tp)
-			if sl > 0 || tp > 0 {
-				_, res, err = f.OrderSlTp(accountState, sl, tp)
+			println("Trail ", trail)
+			if sl > 0 || tp > 0 || trail != 0 {
+				_, res, err = f.OrderSlTpTrail(accountState, sl, tp, trail)
 				if !(err == nil && res.StatusCode >= 200 && res.StatusCode < 300) {
 					println("ERROR OrderSlTp RETRY: ", err.Error(), " statuscode ", res.StatusCode)
 					time.Sleep(3333 * time.Millisecond)
-					_, res, err = f.OrderMarket(accountState, payload)
+					_, res, err = f.OrderSlTpTrail(accountState, sl, tp, trail)
 				}
 
 				if err == nil && res.StatusCode >= 200 && res.StatusCode < 300 {
-					println("SUCCESS Flow with SL/TP")
+					println("SUCCESS Flow with SL/TP/Trail")
 
 					return
 				} else {

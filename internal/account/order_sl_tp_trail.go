@@ -8,7 +8,7 @@ import (
 	"github.com/zmxv/bitmexgo"
 )
 
-func (f *Flow) OrderSlTp(accountState AccountState, sl float64, tp float64) (orders []bitmexgo.Order, res *http.Response, err error) {
+func (f *Flow) OrderSlTpTrail(accountState AccountState, sl float64, tp float64, trail float64) (orders []bitmexgo.Order, res *http.Response, err error) {
 	oppositeSide := "Sell"
 	if accountState.Position.CurrentQty < 0 {
 		oppositeSide = "Buy"
@@ -29,10 +29,23 @@ func (f *Flow) OrderSlTp(accountState AccountState, sl float64, tp float64) (ord
 			"\",\"execInst\":\"ParticipateDoNotInitiate,ReduceOnly\",\"symbol\":\"" + accountState.Position.Symbol + "\"}"
 	}
 
-	var bulkOrders string
-	if slOrder != "" && tpOrder != "" { // ? {"orders":[]}
+	var trailOrder string
+	if trail != 0 {
+		trailOrder = `{"ordType":"Stop","pegOffsetValue":` + fmt.Sprintf("%g", trail) +
+			`,"pegPriceType":"TrailingStopPeg","orderQty":` + fmt.Sprintf("%g", orderQtyAbs) +
+			`,"side":"` + oppositeSide + `","execInst":"Close,LastPrice","symbol":"` + accountState.Position.Symbol + `","text":"Submission from bot"}`
+	}
 
+	var bulkOrders string
+
+	if trailOrder != "" && slOrder != "" && tpOrder == "" {
+		bulkOrders = `[` + trailOrder + `,` + slOrder + `]`
+	} else if trailOrder != "" && slOrder == "" && tpOrder == "" {
+		bulkOrders = `[` + trailOrder + `]`
+	} else if slOrder != "" && tpOrder != "" && trailOrder == "" { // ? {"orders":[]}
 		bulkOrders = `[` + slOrder + `,` + tpOrder + `]`
+	} else if slOrder != "" && tpOrder != "" && trailOrder != "" {
+		bulkOrders = `[` + slOrder + `,` + tpOrder + `,` + trailOrder + `]`
 	} else if slOrder != "" && tpOrder == "" {
 		bulkOrders = `[` + slOrder + `]`
 	} else if slOrder == "" && tpOrder != "" {
