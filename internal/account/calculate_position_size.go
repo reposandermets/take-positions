@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/reposandermets/take-positions/internal/logger"
 )
 
 func FormatFloat(num float64) string {
@@ -60,6 +62,7 @@ func CalculatePositionSize(accountState AccountState, strategyConfig StrategyCon
 		println("ETHUSD contract value: ", contractValue)
 		availableContracts := xbtWallet / contractValue
 		println("ETHUSD available contracts: ", availableContracts)
+		logger.SendSlackNotification("ETHUSD available contracts: " + fmt.Sprintf("%f", availableContracts))
 		positionSize = int(math.Floor(availableContracts * leverageRequiredForStep))
 	}
 

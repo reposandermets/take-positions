@@ -2,10 +2,12 @@ package account
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/reposandermets/take-positions/internal/logger"
 	"github.com/spf13/viper"
 	"github.com/zmxv/bitmexgo"
 )
@@ -52,13 +54,10 @@ func (f *Flow) Initialize() {
 
 func (f *Flow) HandleQueueItem(payload Payload) {
 	payload.Ticker = strings.Replace(payload.Ticker, "/", "", -1)
-	println("############################")
-	println("Received signal", payload.Signal, " ", payload.Ticker)
-	println("############################")
 
+	logger.SendSlackNotification("Received signal " + payload.Signal + " " + payload.Ticker)
 	if payload.Type != "Active" { // TODO get from ENV
-		println("Signal type mismatch: ", payload.Type)
-
+		logger.SendSlackNotification("Signal type mismatch: " + payload.Type)
 		return
 	}
 
@@ -92,6 +91,15 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 	}
 
 	accountState.PositionSize, accountState.ProfitPercentage = CalculatePositionSize(accountState, f.strategyConfig, payload)
+	if accountState.PositionSize < 0 {
+		accountState.PositionSize, accountState.ProfitPercentage = CalculatePositionSize(accountState, f.strategyConfig, payload)
+	}
+
+	if accountState.PositionSize < 0 {
+		logger.SendSlackNotification("Problem with position size: " + fmt.Sprintf("%d", accountState.PositionSize))
+
+		return
+	}
 
 	println("PositionSize ", accountState.PositionSize)
 
@@ -141,8 +149,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 				}
 
 				if err == nil && res.StatusCode >= 200 && res.StatusCode < 300 {
-					println("SUCCESS Flow with SL/TP/Trail")
-
+					logger.SendSlackNotification("SUCCESS Flow with SL/TP/Trail")
 					return
 				} else {
 					println("ERROR SL/TP: ", err.Error(), " statuscode ", res.StatusCode)
