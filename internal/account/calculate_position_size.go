@@ -28,9 +28,8 @@ func CalculatePositionSize(accountState AccountState, strategyConfig StrategyCon
 	println("leverageRequiredForStep", leverageRequiredForStep)
 
 	if hasNotEnoughLeverageLeft {
-		println("leverageAvailable ", leverageAvailable)
-		println("leverageRequiredForStep ", leverageRequiredForStep)
-		println("Not enough levarage left", FormatFloat(leverageAvailable), FormatFloat(leverageRequiredForStep))
+		logger.SendSlackNotification("Not enough levarage left. available: " + FormatFloat(leverageAvailable) + " required: " + FormatFloat(leverageRequiredForStep))
+
 		return positionSize, profitPercentage
 	}
 

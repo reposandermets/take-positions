@@ -71,12 +71,13 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 	}
 
 	if accountState.MarginError != nil || accountState.PositionError != nil || accountState.TradeBinError != nil || accountState.TradeBinEthError != nil {
-		println("ERROR canceling flow", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
-
+		println("ERROR error getting account data cancel flow", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
+		logger.SendSlackNotification("ERROR error getting account data cancel flow")
 		return
 	}
 
 	println("HasOpenPosition ", accountState.HasOpenPosition)
+	logger.SendSlackNotification("HasOpenPosition")
 
 	// if no open position cancel all orders
 	if !accountState.HasOpenPosition {
@@ -86,7 +87,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 
 	if accountState.Side != "" && accountState.Side != payload.Signal {
 		println("Signal and position side mismatch, position side: ", accountState.Side)
-
+		logger.SendSlackNotification("Cancel flow Signal and position side mismatch, position side: " + accountState.Side)
 		return
 	}
 
@@ -96,7 +97,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 	}
 
 	if accountState.PositionSize < 0 {
-		logger.SendSlackNotification("Problem with position size: " + fmt.Sprintf("%d", accountState.PositionSize))
+		logger.SendSlackNotification("ERROR position size: " + fmt.Sprintf("%d", accountState.PositionSize))
 
 		return
 	}
@@ -130,7 +131,8 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 			}
 
 			if accountState.MarginError != nil || accountState.PositionError != nil || accountState.TradeBinError != nil || accountState.TradeBinEthError != nil {
-				println("ERROR accountState after market order canceling flow", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
+				println("ERROR accountState after market order canceling flow", accountState.MarginError.Error(), accountState.PositionError.Error(), accountState.TradeBinError.Error(), accountState.TradeBinEthError.Error())
+				logger.SendSlackNotification("ERROR accountState after market order canceling flow")
 
 				return
 			}
@@ -153,7 +155,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 					return
 				} else {
 					println("ERROR SL/TP: ", err.Error(), " statuscode ", res.StatusCode)
-
+					logger.SendSlackNotification("ERROR SL/TP")
 					return
 				}
 			}
@@ -161,6 +163,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 			println("SUCCESS Flow")
 		} else {
 			println("ERROR creating market order: ", err.Error(), " statuscode ", res.StatusCode)
+			logger.SendSlackNotification("ERROR creating market order")
 		}
 	}
 }
