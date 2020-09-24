@@ -19,14 +19,14 @@ func FormatFloat(num float64) string {
 }
 
 func CalculatePositionSize(accountState AccountState, strategyConfig StrategyConfig, payload Payload) (positionSize int, profitPercentage float64) {
+
 	leverageRequiredForStep := strategyConfig.LeverageAllowed / strategyConfig.StepsAllowed
 	leverageAvailable := strategyConfig.LeverageAllowed - accountState.Margin.MarginLeverage
 
 	hasNotEnoughLeverageLeft := leverageRequiredForStep > leverageAvailable &&
 		math.Abs(profitPercentage-strategyConfig.LossPercentageForReEntry) > 1e-6
 
-	println("leverageRequiredForStep", leverageRequiredForStep)
-
+	logger.SendSlackNotification("ETHUSD leverageRequiredForStep: " + fmt.Sprintf("%f", leverageRequiredForStep))
 	if hasNotEnoughLeverageLeft {
 		logger.SendSlackNotification("Not enough levarage left. available: " + FormatFloat(leverageAvailable) + " required: " + FormatFloat(leverageRequiredForStep))
 
@@ -54,9 +54,11 @@ func CalculatePositionSize(accountState AccountState, strategyConfig StrategyCon
 	}
 
 	xbtWallet := float64(accountState.Margin.WalletBalance) / 100000000
+	logger.SendSlackNotification("ETHUSD accountState.Margin.WalletBalance: " + fmt.Sprintf("%d", accountState.Margin.WalletBalance))
 	if payload.Ticker == "XBTUSD" {
 		positionSize = int(math.Floor(xbtWallet * accountState.TradeBin.Close * leverageRequiredForStep))
 	} else if payload.Ticker == "ETHUSD" {
+		logger.SendSlackNotification("ETHUSD accountState.TradeBinEth.Close: " + fmt.Sprintf("%f", accountState.TradeBinEth.Close))
 		contractValue := accountState.TradeBinEth.Close / 1000000
 		println("ETHUSD contract value: ", contractValue)
 		availableContracts := xbtWallet / contractValue
