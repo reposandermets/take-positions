@@ -1,6 +1,13 @@
 package account
 
-import "github.com/zmxv/bitmexgo"
+import (
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/reposandermets/take-positions/internal/logger"
+	"github.com/zmxv/bitmexgo"
+)
 
 func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 	cPosition := make(chan PositionState)
@@ -46,7 +53,17 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		params.Partial.Set(true)
 		params.Symbol.Set("ETHUSD")
 		params.Reverse.Set(true)
-		tradeBins, _, err := f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
+		var tradeBins []bitmexgo.TradeBin
+		var res *http.Response
+		var err error
+		tradeBins, res, err = f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
+		println("ETHUSD close ", tradeBins[0].Close)
+		logger.SendSlackNotification("ETHUSD tradeBins[0].Close: " + fmt.Sprintf("%f", tradeBins[0].Close))
+		if err == nil && tradeBins[0].Close == 0 {
+			time.Sleep(333 * time.Millisecond)
+			tradeBins, res, err = f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
+		}
+		println("ETHUSD tradebin ", res.StatusCode)
 		var tradeBin bitmexgo.TradeBin
 		if len(tradeBins) > 0 {
 			tradeBin = tradeBins[0]
