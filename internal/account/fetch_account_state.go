@@ -94,7 +94,6 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		var hasOpenPosition bool
 		retry(3, 3*time.Second, func() error {
 			positions, res, err = f.apiClient.PositionApi.PositionGet(f.auth, &params)
-			var position bitmexgo.Position
 			side = ""
 			hasOpenPosition = false
 			if len(positions) > 0 {
