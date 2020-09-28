@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -38,11 +39,34 @@ func (f *Flow) Initialize() {
 
 	f.auth = bitmexgo.NewAPIKeyContext(apiKey, apiSecret)
 
-	// TODO provide improved http client to handle timeouts etc
+	var netTransport = &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: 3 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 3 * time.Second,
+	}
+	var netClient = &http.Client{
+		Timeout:   time.Second * 3,
+		Transport: netTransport,
+	}
+	var cfg *bitmexgo.Configuration
 	if isTestnet {
-		f.apiClient = bitmexgo.NewAPIClient(bitmexgo.NewTestnetConfiguration())
+		cfg = &bitmexgo.Configuration{
+			BasePath:      "https://testnet.bitmex.com/api/v1",
+			DefaultHeader: make(map[string]string),
+			UserAgent:     "server",
+			HTTPClient:    netClient,
+		}
+
+		f.apiClient = bitmexgo.NewAPIClient(cfg)
 	} else {
-		f.apiClient = bitmexgo.NewAPIClient(bitmexgo.NewConfiguration())
+		cfg = &bitmexgo.Configuration{
+			BasePath:      "https://www.bitmex.com/api/v1",
+			DefaultHeader: make(map[string]string),
+			UserAgent:     "server",
+			HTTPClient:    netClient,
+		}
+		f.apiClient = bitmexgo.NewAPIClient(cfg)
 	}
 
 	f.strategyConfig = StrategyConfig{
@@ -81,7 +105,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 
 	// if no open position cancel all orders
 	if !accountState.HasOpenPosition {
-		// might want to specify ticker
+		// might want to specify ticker in the future
 		f.apiClient.OrderApi.OrderCancelAll(f.auth, nil)
 	}
 
