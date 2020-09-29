@@ -38,6 +38,60 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 	cTradeBinEth := make(chan TradeBinEthState)
 
 	go func() {
+		// give BM time to calculate the Close price
+		for time.Now().Second() >= 0 && time.Now().Second() < 5 {
+			time.Sleep(time.Second)
+		}
+		var params bitmexgo.TradeGetBucketedOpts
+		params.BinSize.Set("1m")
+		params.Partial.Set(true)
+		params.Symbol.Set("XBTUSD")
+		params.Reverse.Set(true)
+		var tradeBins []bitmexgo.TradeBin
+		var res *http.Response
+		var err error
+		var tradeBin bitmexgo.TradeBin
+		retry(3, 3*time.Second, func() error {
+			tradeBins, res, err = f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
+
+			if len(tradeBins) > 0 {
+				tradeBin = tradeBins[0]
+			}
+			if tradeBins[0].Close > 0 {
+				return nil
+			}
+
+			s := res.StatusCode
+			switch {
+			case s >= 500:
+				logger.SendSlackNotification("XBTUSD tradeBins http >= 500")
+				return fmt.Errorf("server error: %v", s)
+			case s == 429:
+				time.Sleep(10 * time.Second)
+				logger.SendSlackNotification("XBTUSD tradeBins http 429")
+				return fmt.Errorf("Margin req http 429: %v", s)
+			case s >= 400:
+				logger.SendSlackNotification("XBTUSD tradeBins http >= 400")
+				return stop{fmt.Errorf("client error: %v", s)}
+			case tradeBins[0].Close == 0:
+				logger.SendSlackNotification("XBTUSD tradeBins[0].Close is 0")
+				return fmt.Errorf("XBTUSD tradeBins[0].Close is 0")
+			default:
+				return nil
+			}
+		})
+
+		cTradeBin <- TradeBinState{
+			TradeBin: tradeBin,
+			Error:    err,
+		}
+	}()
+
+	go func() {
+		// give BM time to calculate the Close price
+		for time.Now().Second() >= 0 && time.Now().Second() < 6 {
+			time.Sleep(time.Second)
+		}
 		var params bitmexgo.TradeGetBucketedOpts
 		params.BinSize.Set("1m")
 		params.Partial.Set(true)
@@ -156,52 +210,6 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		cMargin <- MarginState{
 			Margin: margin,
 			Error:  err,
-		}
-	}()
-
-	go func() {
-		var params bitmexgo.TradeGetBucketedOpts
-		params.BinSize.Set("1m")
-		params.Partial.Set(true)
-		params.Symbol.Set("XBTUSD")
-		params.Reverse.Set(true)
-		var tradeBins []bitmexgo.TradeBin
-		var res *http.Response
-		var err error
-		var tradeBin bitmexgo.TradeBin
-		retry(3, 3*time.Second, func() error {
-			tradeBins, res, err = f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
-
-			if len(tradeBins) > 0 {
-				tradeBin = tradeBins[0]
-			}
-			if tradeBins[0].Close > 0 {
-				return nil
-			}
-
-			s := res.StatusCode
-			switch {
-			case s >= 500:
-				logger.SendSlackNotification("XBTUSD tradeBins http >= 500")
-				return fmt.Errorf("server error: %v", s)
-			case s == 429:
-				time.Sleep(10 * time.Second)
-				logger.SendSlackNotification("XBTUSD tradeBins http 429")
-				return fmt.Errorf("Margin req http 429: %v", s)
-			case s >= 400:
-				logger.SendSlackNotification("XBTUSD tradeBins http >= 400")
-				return stop{fmt.Errorf("client error: %v", s)}
-			case tradeBins[0].Close == 0:
-				logger.SendSlackNotification("XBTUSD tradeBins[0].Close is 0")
-				return fmt.Errorf("XBTUSD tradeBins[0].Close is 0")
-			default:
-				return nil
-			}
-		})
-
-		cTradeBin <- TradeBinState{
-			TradeBin: tradeBin,
-			Error:    err,
 		}
 	}()
 
