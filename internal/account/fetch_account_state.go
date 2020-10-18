@@ -51,7 +51,7 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		var res *http.Response
 		var err error
 		var tradeBin bitmexgo.TradeBin
-		retry(3, 3*time.Second, func() error {
+		retry(5, 3*time.Second, func() error {
 			tradeBins, res, err = f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
 
 			if len(tradeBins) > 0 {
@@ -102,7 +102,7 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		var err error
 		var tradeBin bitmexgo.TradeBin
 
-		retry(3, 3*time.Second, func() error {
+		retry(5, 3*time.Second, func() error {
 			tradeBins, res, err = f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
 			if len(tradeBins) > 0 {
 				tradeBin = tradeBins[0]
