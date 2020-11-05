@@ -97,7 +97,7 @@ func getSignalString(sig int) string {
 func (f *Flow) HandleQueueItem(payload Payload) {
 	payload.Ticker = strings.Replace(payload.Ticker, "/", "", -1)
 	payload.Signal = getSignalString(payload.Sig)
-	logger.SendSlackNotification("INFO MESSAGE" + payload.Ticker + " " + fmt.Sprintf("%d", payload.Sig) + " Signal: " + payload.Signal)
+	logger.SendSlackNotification("INFO MESSAGE " + payload.Ticker + " " + fmt.Sprintf("%d", payload.Sig) + " Signal: " + payload.Signal)
 	if payload.Type != "Active" { // TODO use secret here instead
 		logger.SendSlackNotification("Signal type mismatch: " + payload.Type)
 		return
