@@ -8,11 +8,11 @@ import (
 	"github.com/zmxv/bitmexgo"
 )
 
-func (f *Flow) CancelOrders(ticker string) {
+func (f *Flow) CancelOrders(ticker string) error {
 	var params bitmexgo.OrderCancelAllOpts
 	params.Symbol.Set(ticker)
 
-	Retry(3, 3*time.Second, func() error {
+	return Retry(3, 3*time.Second, func() error {
 		_, res, err := f.apiClient.OrderApi.OrderCancelAll(f.auth, &params)
 
 		if res == nil || err != nil {

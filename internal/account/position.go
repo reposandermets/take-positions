@@ -125,14 +125,20 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 		(payload.Signal == "Sell" && accountState.Side == "Buy"))
 
 	if shouldClosePosition {
-		println("Close position ", accountState.Side)
+		logger.SendSlackNotification("INFO try close position " + accountState.Side)
 		err := f.ClosePosition(payload.Ticker)
 		if err != nil {
 			logger.SendSlackNotification("ERROR closing position " + payload.Ticker + " " + err.Error())
+		} else {
+			logger.SendSlackNotification("INFO OK ClosePosition " + accountState.Side + " " + payload.Ticker)
 		}
 
-		f.CancelOrders(payload.Ticker) // TODO doesn't return error
-
+		err = f.CancelOrders(payload.Ticker)
+		if err != nil {
+			logger.SendSlackNotification("ERROR CancelOrders " + payload.Ticker + " " + err.Error())
+		} else {
+			logger.SendSlackNotification("INFO OK CancelOrders" + accountState.Side + " " + payload.Ticker)
+		}
 		return
 	}
 
@@ -145,13 +151,18 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 		println("positionSize ", positionSize)
 		logger.SendSlackNotification("positionSize: " + fmt.Sprintf("%d", positionSize))
 
-		if positionSize < 0 {
+		if positionSize < 2 {
 			logger.SendSlackNotification("ERROR position size: " + fmt.Sprintf("%d", positionSize))
 
 			return
 		}
 
-		f.OrderMarket(positionSize, payload)
+		errOrderMarket := f.OrderMarket(positionSize, payload)
+		if errOrderMarket != nil {
+			logger.SendSlackNotification("ERROR OrderMarket new Position " + payload.Ticker + " " + errOrderMarket.Error())
+
+			return
+		}
 
 		errOpenPosition := Retry(10, 3*time.Second, func() error {
 			accountState = f.FetchAccountState(payload.Ticker)

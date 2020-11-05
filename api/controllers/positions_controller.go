@@ -24,13 +24,8 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		println(err.Error())
-
-		// responses.JSON(w, http.StatusOK, err.Error())
-
 		return
 	}
-
-	// responses.JSON(w, http.StatusOK, payload)
 	queue.Q.Enqueue(payload)
 }
 
