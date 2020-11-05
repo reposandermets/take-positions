@@ -13,7 +13,7 @@ type stop struct {
 	error
 }
 
-func retry(attempts int, sleep time.Duration, f func() error) error {
+func Retry(attempts int, sleep time.Duration, f func() error) error {
 	if err := f(); err != nil {
 		if s, ok := err.(stop); ok {
 			return s.error
@@ -23,7 +23,7 @@ func retry(attempts int, sleep time.Duration, f func() error) error {
 			jitter := time.Duration(attempts)
 			sleep = sleep / jitter
 			time.Sleep(sleep)
-			return retry(attempts, 2*sleep, f)
+			return Retry(attempts, 2*sleep, f)
 		}
 		return err
 	}
@@ -51,9 +51,12 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		var res *http.Response
 		var err error
 		var tradeBin bitmexgo.TradeBin
-		retry(5, 3*time.Second, func() error {
+		Retry(5, 3*time.Second, func() error {
 			tradeBins, res, err = f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
-
+			if res == nil || err != nil {
+				println("TradeGetBucketed XBT", err.Error())
+				return fmt.Errorf("network error: %v", 1)
+			}
 			if len(tradeBins) > 0 {
 				tradeBin = tradeBins[0]
 			}
@@ -102,8 +105,13 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		var err error
 		var tradeBin bitmexgo.TradeBin
 
-		retry(5, 3*time.Second, func() error {
+		Retry(5, 3*time.Second, func() error {
 			tradeBins, res, err = f.apiClient.TradeApi.TradeGetBucketed(f.auth, &params)
+			if res == nil || err != nil {
+				println("TradeGetBucketed ETH", err.Error())
+				return fmt.Errorf("network error: %v", 1)
+			}
+
 			if len(tradeBins) > 0 {
 				tradeBin = tradeBins[0]
 			}
@@ -146,8 +154,12 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		var err error
 		var side string
 		var hasOpenPosition bool
-		retry(3, 3*time.Second, func() error {
+		Retry(3, 3*time.Second, func() error {
 			positions, res, err = f.apiClient.PositionApi.PositionGet(f.auth, &params)
+			if res == nil || err != nil {
+				println("PositionGet ", err.Error())
+				return fmt.Errorf("network error: %v", 1)
+			}
 			side = ""
 			hasOpenPosition = false
 			if len(positions) > 0 {
@@ -189,8 +201,13 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 		var margin bitmexgo.Margin
 		var res *http.Response
 		var err error
-		retry(3, 3*time.Second, func() error {
+		Retry(3, 3*time.Second, func() error {
 			margin, res, err = f.apiClient.UserApi.UserGetMargin(f.auth, nil)
+			if res == nil || err != nil {
+				println("UserGetMargin ", err.Error())
+				return fmt.Errorf("network error: %v", 1)
+			}
+
 			s := res.StatusCode
 			switch {
 			case s >= 500:

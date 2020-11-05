@@ -8,17 +8,16 @@ import (
 	"github.com/zmxv/bitmexgo"
 )
 
-func (f *Flow) OrderMarket(positionSize int, payload Payload) error {
+func (f *Flow) ClosePosition(ticker string) error {
 	var params bitmexgo.OrderNewOpts
 	params.OrdType.Set("Market")
-	params.Side.Set(payload.Signal)
-	params.OrderQty.Set(positionSize)
+	params.ExecInst.Set("Close")
 
-	return Retry(5, 3*time.Second, func() error {
-		_, res, err := f.apiClient.OrderApi.OrderNew(f.auth, payload.Ticker, &params)
+	return Retry(3, 3*time.Second, func() error {
+		_, res, err := f.apiClient.OrderApi.OrderNew(f.auth, ticker, &params)
 
 		if res == nil || err != nil {
-			println("OrderMarket ", err.Error())
+			println("ClosePosition ", err.Error())
 			return fmt.Errorf("network error: %v", 1)
 		}
 

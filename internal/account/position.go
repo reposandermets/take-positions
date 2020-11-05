@@ -70,17 +70,35 @@ func (f *Flow) Initialize() {
 	}
 
 	f.strategyConfig = StrategyConfig{
-		StepsAllowed:             viper.GetFloat64("STEPS_ALLOWED"),
-		LeverageAllowed:          viper.GetFloat64("LEVERAGE_ALLOWED_BUY"),
-		LossPercentageForReEntry: viper.GetFloat64("LOSS_PERCENTAGE_FOR_RE_ENTRY"),
+		LeverageAllowed: viper.GetFloat64("LEVERAGE_ALLOWED_BUY"),
 	}
+}
+
+func getSignalString(sig int) string {
+	if sig == 1 {
+		return "Buy"
+	}
+
+	if sig == -1 {
+		return "Sell"
+	}
+
+	if sig == 2 {
+		return "ExitBuy"
+	}
+
+	if sig == -2 {
+		return "ExitSell"
+	}
+
+	return "UNKNOWN"
 }
 
 func (f *Flow) HandleQueueItem(payload Payload) {
 	payload.Ticker = strings.Replace(payload.Ticker, "/", "", -1)
-
-	logger.SendSlackNotification("Received signal " + payload.Signal + " " + payload.Ticker)
-	if payload.Type != "Active" { // TODO get from ENV
+	payload.Signal = getSignalString(payload.Sig)
+	logger.SendSlackNotification("INFO MESSAGE" + payload.Ticker + " " + fmt.Sprintf("%d", payload.Sig) + " Signal: " + payload.Signal)
+	if payload.Type != "Active" { // TODO use secret here instead
 		logger.SendSlackNotification("Signal type mismatch: " + payload.Type)
 		return
 	}
@@ -89,105 +107,86 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 	accountState = f.FetchAccountState(payload.Ticker)
 
 	if accountState.MarginError != nil || accountState.PositionError != nil || accountState.TradeBinError != nil || accountState.TradeBinEthError != nil {
-		println("ERROR about to retry", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
-		time.Sleep(3333 * time.Millisecond)
-		accountState = f.FetchAccountState(payload.Ticker)
-	}
-
-	if accountState.MarginError != nil || accountState.PositionError != nil || accountState.TradeBinError != nil || accountState.TradeBinEthError != nil {
-		println("ERROR error getting account data cancel flow", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
-		logger.SendSlackNotification("ERROR error getting account data cancel flow")
+		println("ERROR EARLY", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
+		logger.SendSlackNotification("ERROR EARLY f.FetchAccountState")
 		return
 	}
 
-	println("HasOpenPosition ", accountState.HasOpenPosition)
-	logger.SendSlackNotification("HasOpenPosition")
-
-	// if no open position cancel all orders
-	if !accountState.HasOpenPosition {
-		// might want to specify ticker in the future
-		f.apiClient.OrderApi.OrderCancelAll(f.auth, nil)
+	posInfo := "NO open position"
+	if accountState.HasOpenPosition {
+		posInfo = "HAS open " + accountState.Side + " position."
 	}
 
-	if accountState.Side != "" && accountState.Side != payload.Signal {
-		println("Signal and position side mismatch, position side: ", accountState.Side)
-		logger.SendSlackNotification("Cancel flow Signal and position side mismatch, position side: " + accountState.Side)
-		return
-	}
+	logger.SendSlackNotification("INFO " + payload.Ticker + " " + posInfo + " Signal: " + payload.Signal)
 
-	accountState.PositionSize, accountState.ProfitPercentage = CalculatePositionSize(accountState, f.strategyConfig, payload)
-	if accountState.PositionSize < 0 {
-		accountState.PositionSize, accountState.ProfitPercentage = CalculatePositionSize(accountState, f.strategyConfig, payload)
-	}
+	shouldClosePosition := accountState.HasOpenPosition && ((payload.Signal == "ExitBuy" && accountState.Side == "Buy") ||
+		(payload.Signal == "ExitSell" && accountState.Side == "Sell") ||
+		(payload.Signal == "Buy" && accountState.Side == "Sell") ||
+		(payload.Signal == "Sell" && accountState.Side == "Buy"))
 
-	if accountState.PositionSize < 0 {
-		logger.SendSlackNotification("ERROR position size: " + fmt.Sprintf("%d", accountState.PositionSize))
-
-		return
-	}
-
-	println("PositionSize ", accountState.PositionSize)
-
-	if accountState.PositionSize > 0 {
-		var res *http.Response
-		var err error
-
-		_, res, err = f.OrderMarket(accountState, payload)
-
-		if !(err == nil && res.StatusCode >= 200 && res.StatusCode < 300) {
-			println("ERROR creating market order RETRY: ", err.Error(), " statuscode ", res.StatusCode)
-			time.Sleep(1333 * time.Millisecond)
-			_, res, err = f.OrderMarket(accountState, payload)
+	if shouldClosePosition {
+		println("Close position ", accountState.Side)
+		err := f.ClosePosition(payload.Ticker)
+		if err != nil {
+			logger.SendSlackNotification("ERROR closing position " + payload.Ticker + " " + err.Error())
 		}
 
-		if err == nil && res.StatusCode >= 200 && res.StatusCode < 300 {
-			time.Sleep(1333 * time.Millisecond)
+		f.CancelOrders(payload.Ticker) // TODO doesn't return error
+
+		return
+	}
+
+	if !accountState.HasOpenPosition && (payload.Signal == "Buy" || payload.Signal == "Sell") {
+		f.CancelOrders(payload.Ticker)
+		println("Open position ", payload.Signal, " ticker ", payload.Ticker)
+
+		// calculate position size
+		positionSize := CalculatePositionSize(accountState, f.strategyConfig, payload)
+		println("positionSize ", positionSize)
+		logger.SendSlackNotification("positionSize: " + fmt.Sprintf("%d", positionSize))
+
+		if positionSize < 0 {
+			logger.SendSlackNotification("ERROR position size: " + fmt.Sprintf("%d", positionSize))
+
+			return
+		}
+
+		f.OrderMarket(positionSize, payload)
+
+		errOpenPosition := Retry(10, 3*time.Second, func() error {
 			accountState = f.FetchAccountState(payload.Ticker)
 
-			if accountState.MarginError != nil || accountState.PositionError != nil || accountState.TradeBinError != nil || accountState.TradeBinEthError != nil {
-				println("ERROR accountState after market order about to retry", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
-				time.Sleep(3333 * time.Millisecond)
-				accountState = f.FetchAccountState(payload.Ticker)
-			} else if !accountState.HasOpenPosition {
-				println("WARNING no open position after market order, about to retry")
-				time.Sleep(1333 * time.Millisecond)
-				accountState = f.FetchAccountState(payload.Ticker)
+			if accountState.PositionError != nil {
+				println("OrderMarket ", accountState.PositionError.Error())
+				return fmt.Errorf("Check position after market order network error: %v", 1)
 			}
 
-			if accountState.MarginError != nil || accountState.PositionError != nil || accountState.TradeBinError != nil || accountState.TradeBinEthError != nil {
-				println("ERROR accountState after market order canceling flow", accountState.MarginError.Error(), accountState.PositionError.Error(), accountState.TradeBinError.Error(), accountState.TradeBinEthError.Error())
-				logger.SendSlackNotification("ERROR accountState after market order canceling flow")
-
-				return
+			if !accountState.HasOpenPosition {
+				println("ERROR !accountState.HasOpenPosition after marketOrder")
+				return fmt.Errorf("no position after marketOrder: %v", 1)
 			}
 
-			// calculate stop loss
-			sl, tp, trail := CalculateSlTpTrail(accountState, payload)
-			println("SL ", sl)
-			println("TP ", tp)
-			println("Trail ", trail)
-			if sl > 0 || tp > 0 || trail != 0 {
-				_, res, err = f.OrderSlTpTrail(accountState, sl, tp, trail)
-				if !(err == nil && res.StatusCode >= 200 && res.StatusCode < 300) {
-					println("ERROR OrderSlTp RETRY: ", err.Error(), " statuscode ", res.StatusCode)
-					time.Sleep(3333 * time.Millisecond)
-					_, res, err = f.OrderSlTpTrail(accountState, sl, tp, trail)
-				}
+			return nil
+		})
 
-				if err == nil && res.StatusCode >= 200 && res.StatusCode < 300 {
-					logger.SendSlackNotification("SUCCESS Flow with SL/TP/Trail")
-					return
-				} else {
-					println("ERROR SL/TP: ", err.Error(), " statuscode ", res.StatusCode)
-					logger.SendSlackNotification("ERROR SL/TP")
-					return
-				}
-			}
+		if errOpenPosition != nil {
+			println("ERROR FINAL !accountState.HasOpenPosition after marketOrder")
+			logger.SendSlackNotification("ERROR ABORT !accountState.HasOpenPosition after marketOrder: " + errOpenPosition.Error())
 
-			println("SUCCESS Flow")
-		} else {
-			println("ERROR creating market order: ", err.Error(), " statuscode ", res.StatusCode)
-			logger.SendSlackNotification("ERROR creating market order")
+			return
 		}
+
+		logger.SendSlackNotification("Entry price: " + fmt.Sprintf("%f", accountState.Position.AvgEntryPrice))
+
+		sl, tp := CalculateSlTp(accountState, payload)
+
+		err := f.OrderSlTp(accountState, sl, tp)
+		if err == nil {
+			logger.SendSlackNotification("SUCCESS Market TP SL")
+		} else {
+			println("ERROR Market TP SL, about to close position ", err.Error())
+			logger.SendSlackNotification("ERROR Market TP SL, about to close position " + err.Error())
+		}
+		return
 	}
 }

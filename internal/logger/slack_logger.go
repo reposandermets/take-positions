@@ -17,6 +17,9 @@ type SlackRequestBody struct {
 }
 
 func SendSlackNotification(msg interface{}) error {
+	println(fmt.Sprintf("%v", msg))
+
+	// TODO make it gopher
 	webhookUrl := viper.GetString("SLACK_URL")
 	channel := viper.GetString("SLACK_CHANNEL")
 

@@ -2,40 +2,20 @@ package account
 
 import "math"
 
-func CalculateSlTpTrail(accountState AccountState, payload Payload) (sl float64, tp float64, trail float64) {
+func CalculateSlTp(accountState AccountState, payload Payload) (sl float64, tp float64) {
+	if payload.Ticker == "ETHUSD" && accountState.Side == "Buy" {
+		tp = math.Round((accountState.Position.AvgEntryPrice+payload.Atr)*10) / 10
+		sl = math.Round((accountState.Position.AvgEntryPrice-(1.5*payload.Atr))*10) / 10
 
-	if payload.SlPerc > 0 {
-		if payload.Ticker == "ETHUSD" {
-			ethPriceRaw := math.Round(accountState.Position.AvgEntryPrice * 100)
-			slFactor := ethPriceRaw * payload.SlPerc / 100
-			if accountState.Side == "Buy" {
-				sl = math.Round((ethPriceRaw-slFactor)/10) / 10
-			} else if accountState.Side == "Sell" {
-				sl = math.Round((ethPriceRaw+slFactor)/10) / 10
-			}
-		}
+		return sl, tp
 	}
 
-	if payload.TpPerc > 0 {
-		if payload.Ticker == "ETHUSD" {
-			ethPriceRaw := math.Round(accountState.Position.AvgEntryPrice * 100)
-			tpAmount := ethPriceRaw * payload.TpPerc / 100
-			if accountState.Side == "Buy" {
-				tp = math.Round((ethPriceRaw+tpAmount)/10) / 10
-			} else if accountState.Side == "Sell" {
-				tp = math.Round((ethPriceRaw-tpAmount)/10) / 10
-			}
-		}
+	if payload.Ticker == "ETHUSD" && accountState.Side == "Sell" {
+		tp = math.Round((accountState.Position.AvgEntryPrice-payload.Atr)*10) / 10
+		sl = math.Round((accountState.Position.AvgEntryPrice+(1.5*payload.Atr))*10) / 10
+
+		return sl, tp
 	}
 
-	if payload.TrailPerc > 0 {
-		if payload.Ticker == "ETHUSD" {
-			trail = math.Round(accountState.Position.AvgEntryPrice*payload.TrailPerc/10) / 10
-			if accountState.Side == "Buy" {
-				trail = 0 - trail
-			}
-		}
-	}
-
-	return sl, tp, trail
+	return sl, tp
 }

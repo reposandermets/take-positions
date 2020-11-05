@@ -5,14 +5,13 @@ import (
 )
 
 type Payload struct {
-	Ticker    string  `json:"ticker"`
-	Exchange  string  `json:"exchange"`
-	Signal    string  `json:"signal"`
-	Type      string  `json:"type"`
-	SlPerc    float64 `json:"sl_perc"`
-	TpPerc    float64 `json:"tp_perc"`
-	TrailPerc float64 `json:"trail_perc"`
-	Secret    string  `json:"secret"`
+	Sig      int     `json:"sig"`
+	Ticker   string  `json:"ticker"`
+	Atr      float64 `json:"atr"`
+	Type     string  `json:"type"`
+	Secret   string  `json:"secret"`
+	Exchange string  `json:"exchange"`
+	Signal   string  `json:"signal"`
 }
 
 type AccountState struct {
@@ -53,7 +52,5 @@ type TradeBinEthState struct {
 }
 
 type StrategyConfig struct {
-	StepsAllowed             float64
-	LeverageAllowed          float64
-	LossPercentageForReEntry float64
+	LeverageAllowed float64
 }
