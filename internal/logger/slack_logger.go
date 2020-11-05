@@ -18,7 +18,7 @@ type SlackRequestBody struct {
 
 func SendSlackNotification(msg interface{}) error {
 	currentTime := time.Now()
-	println(fmt.Sprintf("%v", msg))
+	println(fmt.Sprintf(currentTime.Format("2006-01-02 15:04:05 Mon")+" %v", msg))
 
 	// TODO make it gopher
 	webhookUrl := viper.GetString("SLACK_URL")
