@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/reposandermets/take-positions/internal/account"
+	"github.com/reposandermets/take-positions/internal/logger"
 	"github.com/reposandermets/take-positions/internal/queue"
 
 	"github.com/reposandermets/take-positions/api/responses"
@@ -16,7 +17,7 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		println(err.Error())
+		logger.SendSlackNotification("ERROR UpsertPosition ioutil.ReadAll: " + err.Error())
 		return
 	}
 
@@ -24,6 +25,7 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		println(err.Error())
+		logger.SendSlackNotification("ERROR UpsertPosition json.Unmarshal: " + err.Error())
 		return
 	}
 	queue.Q.Enqueue(payload)

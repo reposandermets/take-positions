@@ -17,13 +17,14 @@ type SlackRequestBody struct {
 }
 
 func SendSlackNotification(msg interface{}) error {
+	currentTime := time.Now()
 	println(fmt.Sprintf("%v", msg))
 
 	// TODO make it gopher
 	webhookUrl := viper.GetString("SLACK_URL")
 	channel := viper.GetString("SLACK_CHANNEL")
 
-	slackRequestBody := SlackRequestBody{Text: "take-positions: " + fmt.Sprintf("%v", msg), Channel: "#" + channel}
+	slackRequestBody := SlackRequestBody{Text: "take-positions " + currentTime.Format("2006-01-02 15:04:05 Mon") + " - " + fmt.Sprintf("%v", msg), Channel: "#" + channel}
 
 	slackBody, _ := json.Marshal(slackRequestBody)
 	req, err := http.NewRequest(http.MethodPost, webhookUrl, bytes.NewBuffer(slackBody))
