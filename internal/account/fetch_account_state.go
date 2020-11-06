@@ -92,7 +92,7 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 
 	go func() {
 		// give BM time to calculate the Close price
-		for time.Now().Second() >= 0 && time.Now().Second() < 11 {
+		for time.Now().Second() >= 0 && time.Now().Second() < 15 {
 			time.Sleep(time.Second)
 		}
 		var params bitmexgo.TradeGetBucketedOpts
