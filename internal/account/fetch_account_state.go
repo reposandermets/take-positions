@@ -39,7 +39,7 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 
 	go func() {
 		// give BM time to calculate the Close price
-		for time.Now().Second() >= 0 && time.Now().Second() < 10 {
+		for time.Now().Second() >= 0 && time.Now().Second() < 15 {
 			time.Sleep(time.Second)
 		}
 		var params bitmexgo.TradeGetBucketedOpts
@@ -92,7 +92,7 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 
 	go func() {
 		// give BM time to calculate the Close price
-		for time.Now().Second() >= 0 && time.Now().Second() < 15 {
+		for time.Now().Second() >= 0 && time.Now().Second() < 16 {
 			time.Sleep(time.Second)
 		}
 		var params bitmexgo.TradeGetBucketedOpts
@@ -138,7 +138,7 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 				return nil
 			}
 		})
-		logger.SendSlackNotification("ETHUSD tradeBins[0].Close: " + fmt.Sprintf("%f", tradeBins[0].Close))
+
 		cTradeBinEth <- TradeBinEthState{
 			TradeBinEth: tradeBin,
 			Error:       err,

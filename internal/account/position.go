@@ -97,7 +97,7 @@ func getSignalString(sig int) string {
 func (f *Flow) HandleQueueItem(payload Payload) {
 	payload.Ticker = strings.Replace(payload.Ticker, "/", "", -1)
 	payload.Signal = getSignalString(payload.Sig)
-	logger.SendSlackNotification("INFO MESSAGE " + payload.Ticker + " " + fmt.Sprintf("%d", payload.Sig) + " Signal: " + payload.Signal)
+
 	if payload.Type != "Active" { // TODO use secret here instead
 		logger.SendSlackNotification("Signal type mismatch: " + payload.Type)
 		return
@@ -117,15 +117,14 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 		posInfo = "HAS open " + accountState.Side + " position."
 	}
 
-	logger.SendSlackNotification("INFO " + payload.Ticker + " " + posInfo + " Signal: " + payload.Signal)
-
 	shouldClosePosition := accountState.HasOpenPosition && ((payload.Signal == "ExitBuy" && accountState.Side == "Buy") ||
 		(payload.Signal == "ExitSell" && accountState.Side == "Sell") ||
 		(payload.Signal == "Buy" && accountState.Side == "Sell") ||
 		(payload.Signal == "Sell" && accountState.Side == "Buy"))
 
 	if shouldClosePosition {
-		logger.SendSlackNotification("INFO try close position " + accountState.Side)
+		logger.SendSlackNotification("INFO about to close position " + accountState.Side + " " + payload.Ticker + " " + posInfo + " Signal: " + payload.Signal + " " + fmt.Sprintf("%d", payload.Sig))
+
 		err := f.ClosePosition(payload.Ticker)
 		if err != nil {
 			logger.SendSlackNotification("ERROR closing position " + payload.Ticker + " " + err.Error())
@@ -143,6 +142,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 	}
 
 	if !accountState.HasOpenPosition && (payload.Signal == "Buy" || payload.Signal == "Sell") {
+		logger.SendSlackNotification("INFO " + payload.Ticker + " " + posInfo + " Signal: " + payload.Signal + " " + fmt.Sprintf("%d", payload.Sig))
 		f.CancelOrders(payload.Ticker)
 		println("Open position ", payload.Signal, " ticker ", payload.Ticker)
 
