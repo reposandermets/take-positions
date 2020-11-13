@@ -8,6 +8,8 @@ type Payload struct {
 	Sig      int     `json:"sig"`
 	Ticker   string  `json:"ticker"`
 	Atr      float64 `json:"atr"`
+	AtrSl    float64 `json:"atrsl"`
+	Risk     float64 `json:"risk"`
 	Type     string  `json:"type"`
 	Secret   string  `json:"secret"`
 	Exchange string  `json:"exchange"`

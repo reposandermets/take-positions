@@ -19,36 +19,36 @@ func FormatFloat(num float64) string {
 }
 
 func CalculatePositionSize(accountState AccountState, strategyConfig StrategyConfig, payload Payload) (positionSize int) {
-
-	leverageRequiredForStep := strategyConfig.LeverageAllowed
-	leverageAvailable := strategyConfig.LeverageAllowed - accountState.Margin.MarginLeverage
-
-	hasNotEnoughLeverageLeft := leverageRequiredForStep > leverageAvailable // && math.Abs(profitPercentage-strategyConfig.LossPercentageForReEntry) > 1e-6
-
-	logger.SendSlackNotification("ETHUSD leverageRequiredForStep: " + fmt.Sprintf("%f", leverageRequiredForStep))
-	if hasNotEnoughLeverageLeft {
-		logger.SendSlackNotification("Not enough levarage left. available: " + FormatFloat(leverageAvailable) + " required: " + FormatFloat(leverageRequiredForStep))
-
-		return positionSize
-	}
-
 	xbtWallet := float64(accountState.Margin.WalletBalance) / 100000000
-	logger.SendSlackNotification("ETHUSD accountState.Margin.WalletBalance: " + fmt.Sprintf("%d", accountState.Margin.WalletBalance))
+	atrSl := payload.AtrSl
+	equity := xbtWallet * accountState.TradeBin.Close
+	riskAllowed := payload.Risk
+	positionLeverage := 0.0
+	contractsCashValue := 0.0
 	if payload.Ticker == "XBTUSD" {
-		positionSize = int(math.Floor(xbtWallet * accountState.TradeBin.Close * leverageRequiredForStep))
+		close := accountState.TradeBin.Close
+		atrRiskPerc := atrSl * 100 / close
+		riskRatio := riskAllowed / atrRiskPerc
+		positionSize = int(math.Floor(xbtWallet * close * riskRatio))
 	} else if payload.Ticker == "ETHUSD" {
-		logger.SendSlackNotification("ETHUSD accountState.TradeBinEth.Close: " + fmt.Sprintf("%f", accountState.TradeBinEth.Close))
+		close := accountState.TradeBinEth.Close
+		atrRiskPerc := atrSl * 100 / close
+		riskRatio := riskAllowed / atrRiskPerc
 		contractValue := accountState.TradeBinEth.Close / 1000000
-		println("ETHUSD contract value: ", contractValue)
 		availableContracts := xbtWallet / contractValue
-		println("ETHUSD available contracts: ", availableContracts)
-		logger.SendSlackNotification("ETHUSD available contracts: " + fmt.Sprintf("%f", availableContracts))
-		positionSize = int(math.Floor(availableContracts * leverageRequiredForStep))
+		positionSize = int(math.Floor(availableContracts * riskRatio))
+		if positionSize%2 != 0 {
+			positionSize = positionSize - 1
+		}
+		positionLeverage = float64(positionSize) / availableContracts
+		contractsCashValue = float64(positionSize) * contractValue * accountState.TradeBin.Close
 	}
 
-	if positionSize%2 != 0 {
-		positionSize = positionSize - 1
-	}
+	logger.SendSlackNotification("INFO equity: " + fmt.Sprintf("%d", equity) +
+		" riskAllowed: " + fmt.Sprintf("%d", riskAllowed) +
+		" leverage: " + fmt.Sprintf("%d", positionLeverage) +
+		" leverage: " + fmt.Sprintf("%d", positionLeverage) +
+		" cash: " + fmt.Sprintf("%d", contractsCashValue))
 
 	return positionSize
 }
