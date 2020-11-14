@@ -17,13 +17,16 @@ func (f *Flow) OrderSlTp(accountState AccountState, sl float64, tp float64) erro
 
 	fullOrderQtyAbs := math.Abs(float64(accountState.Position.CurrentQty))
 
-	slOrder := "{\"ordType\":\"Stop\",\"stopPx\":" + fmt.Sprintf("%g", sl) +
-		",\"orderQty\":" + fmt.Sprintf("%g", fullOrderQtyAbs) + ",\"side\":\"" + oppositeSide +
-		"\",\"execInst\":\"Close,LastPrice\",\"symbol\":\"" + accountState.Position.Symbol + "\"}"
+	var positionId string
+	positionId = fmt.Sprintf("%g", accountState.Position.AvgEntryPrice)
 
-	tpOrder := "{\"ordType\":\"Limit\",\"price\":" + fmt.Sprintf("%g", tp) +
-		",\"orderQty\":" + fmt.Sprintf("%g", (fullOrderQtyAbs/2)) + ",\"side\":\"" + oppositeSide +
-		"\",\"execInst\":\"ParticipateDoNotInitiate,ReduceOnly\",\"symbol\":\"" + accountState.Position.Symbol + "\"}"
+	slOrder := `{"ordType":"Stop","stopPx":` + fmt.Sprintf("%g", sl) + `,"text":"` + positionId + `"` +
+		`,"orderQty":` + fmt.Sprintf("%g", fullOrderQtyAbs) + `,"side":"` + oppositeSide +
+		`","execInst":"Close,LastPrice","symbol":"` + accountState.Position.Symbol + `"}`
+
+	tpOrder := `{"ordType":"Limit","price":` + fmt.Sprintf("%g", tp) + `,"text":"` + positionId + `"` +
+		`,"orderQty":` + fmt.Sprintf("%g", (fullOrderQtyAbs/2)) + `,"side":"` + oppositeSide +
+		`","execInst":"ParticipateDoNotInitiate,ReduceOnly","symbol":"` + accountState.Position.Symbol + `"}`
 
 	bulkOrders := `[` + slOrder + `,` + tpOrder + `]`
 
