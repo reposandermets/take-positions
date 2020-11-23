@@ -14,9 +14,8 @@ import (
 )
 
 type Flow struct {
-	apiClient      *bitmexgo.APIClient
-	auth           context.Context
-	strategyConfig StrategyConfig
+	apiClient *bitmexgo.APIClient
+	auth      context.Context
 }
 
 var F = Flow{}
@@ -67,10 +66,6 @@ func (f *Flow) Initialize() {
 			HTTPClient:    netClient,
 		}
 		f.apiClient = bitmexgo.NewAPIClient(cfg)
-	}
-
-	f.strategyConfig = StrategyConfig{
-		LeverageAllowed: viper.GetFloat64("LEVERAGE_ALLOWED_BUY"),
 	}
 }
 
@@ -147,7 +142,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 		println("Open position ", payload.Signal, " ticker ", payload.Ticker)
 
 		// calculate position size
-		positionSize := CalculatePositionSize(accountState, f.strategyConfig, payload)
+		positionSize := CalculatePositionSize(accountState, payload)
 		println("positionSize ", positionSize)
 		logger.SendSlackNotification("positionSize: " + fmt.Sprintf("%d", positionSize))
 
@@ -187,16 +182,16 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 			return
 		}
 
-		logger.SendSlackNotification("Entry price: " + fmt.Sprintf("%f", accountState.Position.AvgEntryPrice))
+		logger.SendSlackNotification("INFO Entry price: " + fmt.Sprintf("%f", accountState.Position.AvgEntryPrice))
 
 		sl, tp := CalculateSlTp(accountState, payload)
 
 		err := f.OrderSlTp(accountState, sl, tp)
 		if err == nil {
-			logger.SendSlackNotification("SUCCESS Market TP SL")
+			logger.SendSlackNotification("INFO SUCCESS TP SL")
 		} else {
 			println("ERROR Market TP SL, about to close position ", err.Error())
-			logger.SendSlackNotification("ERROR Market TP SL, about to close position " + err.Error())
+			logger.SendSlackNotification("ERROR Market TP SL, FIX manually " + err.Error())
 		}
 		return
 	}

@@ -16,6 +16,10 @@ func (f *Flow) OrderSlTp(accountState AccountState, sl float64, tp float64) erro
 	}
 
 	fullOrderQtyAbs := math.Abs(float64(accountState.Position.CurrentQty))
+	tpQty := math.Floor(fullOrderQtyAbs / 2.0)
+
+	logger.SendSlackNotification("INFO TP1: " + fmt.Sprintf("%g", tpQty) + " contracts at " + fmt.Sprintf("%g", tp) +
+		" SL: " + fmt.Sprintf("%g", fullOrderQtyAbs) + " contracts at " + fmt.Sprintf("%g", sl))
 
 	var positionId string
 	positionId = fmt.Sprintf("%g", accountState.Position.AvgEntryPrice)
@@ -25,7 +29,7 @@ func (f *Flow) OrderSlTp(accountState AccountState, sl float64, tp float64) erro
 		`","execInst":"Close,LastPrice","symbol":"` + accountState.Position.Symbol + `"}`
 
 	tpOrder := `{"ordType":"Limit","price":` + fmt.Sprintf("%g", tp) + `,"text":"` + positionId + `"` +
-		`,"orderQty":` + fmt.Sprintf("%g", (fullOrderQtyAbs/2)) + `,"side":"` + oppositeSide +
+		`,"orderQty":` + fmt.Sprintf("%g", tpQty) + `,"side":"` + oppositeSide +
 		`","execInst":"ParticipateDoNotInitiate,ReduceOnly","symbol":"` + accountState.Position.Symbol + `"}`
 
 	bulkOrders := `[` + slOrder + `,` + tpOrder + `]`

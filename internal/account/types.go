@@ -52,7 +52,3 @@ type TradeBinEthState struct {
 	TradeBinEth bitmexgo.TradeBin
 	Error       error
 }
-
-type StrategyConfig struct {
-	LeverageAllowed float64
-}
