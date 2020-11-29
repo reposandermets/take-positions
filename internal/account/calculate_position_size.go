@@ -31,6 +31,8 @@ func CalculatePositionSize(accountState AccountState, payload Payload) (position
 		atrRiskPerc := atrSl * 100 / close
 		riskRatio = riskAllowed / atrRiskPerc
 		positionSize = int(math.Floor(xbtWallet * close * riskRatio))
+		positionLeverage = riskRatio
+		contractsCashValue = float64(positionSize)
 	} else if payload.Ticker == "ETHUSD" {
 		close := accountState.TradeBinEth.Close
 		atrRiskPerc := atrSl * 100 / close
@@ -42,11 +44,12 @@ func CalculatePositionSize(accountState AccountState, payload Payload) (position
 		contractsCashValue = float64(positionSize) * contractValue * accountState.TradeBin.Close
 	}
 
-	logger.SendSlackNotification("INFO equity: " + fmt.Sprintf("%g", equity) +
-		" riskAllowed: " + fmt.Sprintf("%g", riskAllowed) +
-		" riskRatio: " + fmt.Sprintf("%g", riskRatio) +
-		" leverage: " + fmt.Sprintf("%g", positionLeverage) +
-		" cash: " + fmt.Sprintf("%g", contractsCashValue))
+	logger.SendSlackNotification("INFO equity wallet $: " + fmt.Sprintf("%g", math.Floor(equity*100)/100) +
+		" wallet XBT: " + fmt.Sprintf("%g", float64(accountState.Margin.WalletBalance)) +
+		" riskAllowed: " + fmt.Sprintf("%g", math.Round(riskAllowed*100)/100) +
+		" riskRatio: " + fmt.Sprintf("%g", math.Round(riskRatio*100)/100) +
+		" leverage: " + fmt.Sprintf("%g", math.Round(positionLeverage*100)/100) +
+		" position cash value: " + fmt.Sprintf("%g", math.Round(contractsCashValue*100)/100))
 
 	return positionSize
 }
