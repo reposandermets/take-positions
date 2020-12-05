@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/reposandermets/take-positions/internal/logger"
@@ -69,35 +68,7 @@ func (f *Flow) Initialize() {
 	}
 }
 
-func getSignalString(sig int) string {
-	if sig == 1 {
-		return "Buy"
-	}
-
-	if sig == -1 {
-		return "Sell"
-	}
-
-	if sig == 2 {
-		return "ExitBuy"
-	}
-
-	if sig == -2 {
-		return "ExitSell"
-	}
-
-	return "UNKNOWN"
-}
-
 func (f *Flow) HandleQueueItem(payload Payload) {
-	payload.Ticker = strings.Replace(payload.Ticker, "/", "", -1)
-	payload.Signal = getSignalString(payload.Sig)
-
-	if payload.Type != "Active" { // TODO use secret here instead
-		logger.SendSlackNotification("Signal type mismatch: " + payload.Type)
-		return
-	}
-
 	var accountState AccountState
 	accountState = f.FetchAccountState(payload.Ticker)
 
