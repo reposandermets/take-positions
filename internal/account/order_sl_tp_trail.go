@@ -16,7 +16,7 @@ func (f *Flow) OrderSlTp(accountState AccountState, sl float64, tp float64) erro
 	}
 
 	fullOrderQtyAbs := math.Abs(float64(accountState.Position.CurrentQty))
-	tpQty := math.Floor(fullOrderQtyAbs / 2.0)
+	tpQty := math.Floor(fullOrderQtyAbs / 3.3)
 
 	logger.SendSlackNotification("INFO TP1: " + fmt.Sprintf("%g", tpQty) + " contracts at " + fmt.Sprintf("%g", tp) +
 		" SL: " + fmt.Sprintf("%g", fullOrderQtyAbs) + " contracts at " + fmt.Sprintf("%g", sl))
