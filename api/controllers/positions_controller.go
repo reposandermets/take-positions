@@ -38,7 +38,7 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		logger.SendSlackNotification("ERROR UpsertPosition ioutil.ReadAll: " + err.Error())
+		logger.SendLoggerNotification("ERROR UpsertPosition ioutil.ReadAll: " + err.Error())
 		return
 	}
 
@@ -46,7 +46,7 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &payload)
 	if err != nil {
 		println(err.Error())
-		logger.SendSlackNotification("ERROR UpsertPosition json.Unmarshal: " + err.Error())
+		logger.SendLoggerNotification("ERROR UpsertPosition json.Unmarshal: " + err.Error())
 		return
 	}
 
@@ -61,7 +61,7 @@ func (server *Server) UpsertPosition(w http.ResponseWriter, r *http.Request) {
 	payload.Signal = getSignalString(payload.Sig)
 
 	if payload.Type != "Active" { // TODO use secret here instead
-		logger.SendSlackNotification("Signal type mismatch: " + payload.Type)
+		logger.SendLoggerNotification("Signal type mismatch: " + payload.Type)
 		return
 	}
 

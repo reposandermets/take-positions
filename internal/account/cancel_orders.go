@@ -23,14 +23,14 @@ func (f *Flow) CancelOrders(ticker string) error {
 		s := res.StatusCode
 		switch {
 		case s >= 500:
-			logger.SendSlackNotification("CancelOrders http >= 500")
+			logger.SendLoggerNotification("CancelOrders http >= 500")
 			return fmt.Errorf("server error: %v", s)
 		case s == 429:
 			time.Sleep(10 * time.Second)
-			logger.SendSlackNotification("CancelOrders http 429")
+			logger.SendLoggerNotification("CancelOrders http 429")
 			return fmt.Errorf("Margin req http 429: %v", s)
 		case s >= 400:
-			logger.SendSlackNotification("CancelOrders 4xx")
+			logger.SendLoggerNotification("CancelOrders 4xx")
 			return stop{fmt.Errorf("client error: %v", s)}
 		default:
 			return nil

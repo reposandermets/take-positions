@@ -44,7 +44,7 @@ func CalculatePositionSize(accountState AccountState, payload Payload) (position
 		contractsCashValue = float64(positionSize) * contractValue * accountState.TradeBin.Close
 	}
 
-	logger.SendSlackNotification("INFO equity wallet $: " + fmt.Sprintf("%g", math.Floor(equity*100)/100) +
+	logger.SendLoggerNotification("INFO equity wallet $: " + fmt.Sprintf("%g", math.Floor(equity*100)/100) +
 		" wallet XBT: " + fmt.Sprintf("%g", float64(accountState.Margin.WalletBalance)) +
 		" riskAllowed: " + fmt.Sprintf("%g", math.Round(riskAllowed*100)/100) +
 		" riskRatio: " + fmt.Sprintf("%g", math.Round(riskRatio*100)/100) +

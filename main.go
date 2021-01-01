@@ -11,7 +11,7 @@ func main() {
 	viper.SetConfigFile(".env")
 	viper.ReadInConfig()
 	viper.AutomaticEnv()
-	logger.SendSlackNotification("Boot")
+	logger.SendLoggerNotification("Boot")
 	core.Run()
 	api.Run()
 }

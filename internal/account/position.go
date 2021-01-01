@@ -74,7 +74,7 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 
 	if accountState.MarginError != nil || accountState.PositionError != nil || accountState.TradeBinError != nil || accountState.TradeBinEthError != nil {
 		println("ERROR EARLY", accountState.MarginError, accountState.PositionError, accountState.TradeBinError, accountState.TradeBinEthError)
-		logger.SendSlackNotification("ERROR EARLY f.FetchAccountState")
+		logger.SendLoggerNotification("ERROR EARLY f.FetchAccountState")
 		return
 	}
 
@@ -89,43 +89,43 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 		(payload.Signal == "Sell" && accountState.Side == "Buy"))
 
 	if shouldClosePosition {
-		logger.SendSlackNotification("INFO about to close position " + accountState.Side + " " + payload.Ticker + " " + posInfo + " Signal: " + payload.Signal + " " + fmt.Sprintf("%d", payload.Sig))
+		logger.SendLoggerNotification("INFO about to close position " + accountState.Side + " " + payload.Ticker + " " + posInfo + " Signal: " + payload.Signal + " " + fmt.Sprintf("%d", payload.Sig))
 
 		err := f.ClosePosition(payload.Ticker)
 		if err != nil {
-			logger.SendSlackNotification("ERROR closing position " + payload.Ticker + " " + err.Error())
+			logger.SendLoggerNotification("ERROR closing position " + payload.Ticker + " " + err.Error())
 		} else {
-			logger.SendSlackNotification("INFO OK ClosePosition " + accountState.Side + " " + payload.Ticker)
+			logger.SendLoggerNotification("INFO OK ClosePosition " + accountState.Side + " " + payload.Ticker)
 		}
 
 		err = f.CancelOrders(payload.Ticker)
 		if err != nil {
-			logger.SendSlackNotification("ERROR CancelOrders " + payload.Ticker + " " + err.Error())
+			logger.SendLoggerNotification("ERROR CancelOrders " + payload.Ticker + " " + err.Error())
 		} else {
-			logger.SendSlackNotification("INFO OK CancelOrders" + accountState.Side + " " + payload.Ticker)
+			logger.SendLoggerNotification("INFO OK CancelOrders" + accountState.Side + " " + payload.Ticker)
 		}
 		return
 	}
 
 	if !accountState.HasOpenPosition && (payload.Signal == "Buy" || payload.Signal == "Sell") {
-		logger.SendSlackNotification("INFO " + payload.Ticker + " " + posInfo + " Signal: " + payload.Signal + " " + fmt.Sprintf("%d", payload.Sig))
+		logger.SendLoggerNotification("INFO " + payload.Ticker + " " + posInfo + " Signal: " + payload.Signal + " " + fmt.Sprintf("%d", payload.Sig))
 		f.CancelOrders(payload.Ticker)
 		println("Open position ", payload.Signal, " ticker ", payload.Ticker)
 
 		// calculate position size
 		positionSize := CalculatePositionSize(accountState, payload)
 		println("positionSize ", positionSize)
-		logger.SendSlackNotification("positionSize: " + fmt.Sprintf("%d", positionSize))
+		logger.SendLoggerNotification("positionSize: " + fmt.Sprintf("%d", positionSize))
 
 		if positionSize < 2 {
-			logger.SendSlackNotification("ERROR position size: " + fmt.Sprintf("%d", positionSize))
+			logger.SendLoggerNotification("ERROR position size: " + fmt.Sprintf("%d", positionSize))
 
 			return
 		}
 
 		errOrderMarket := f.OrderMarket(positionSize, payload)
 		if errOrderMarket != nil {
-			logger.SendSlackNotification("ERROR OrderMarket new Position " + payload.Ticker + " " + errOrderMarket.Error())
+			logger.SendLoggerNotification("ERROR OrderMarket new Position " + payload.Ticker + " " + errOrderMarket.Error())
 
 			return
 		}
@@ -148,21 +148,21 @@ func (f *Flow) HandleQueueItem(payload Payload) {
 
 		if errOpenPosition != nil {
 			println("ERROR FINAL !accountState.HasOpenPosition after marketOrder")
-			logger.SendSlackNotification("ERROR ABORT !accountState.HasOpenPosition after marketOrder: " + errOpenPosition.Error())
+			logger.SendLoggerNotification("ERROR ABORT !accountState.HasOpenPosition after marketOrder: " + errOpenPosition.Error())
 
 			return
 		}
 
-		logger.SendSlackNotification("INFO Entry price: " + fmt.Sprintf("%f", accountState.Position.AvgEntryPrice))
+		logger.SendLoggerNotification("INFO Entry price: " + fmt.Sprintf("%f", accountState.Position.AvgEntryPrice))
 
 		sl, tp := CalculateSlTp(accountState, payload)
 
 		err := f.OrderSlTp(accountState, sl, tp)
 		if err == nil {
-			logger.SendSlackNotification("INFO SUCCESS TP SL")
+			logger.SendLoggerNotification("INFO SUCCESS TP SL")
 		} else {
 			println("ERROR Market TP SL, about to close position ", err.Error())
-			logger.SendSlackNotification("ERROR Market TP SL, FIX manually " + err.Error())
+			logger.SendLoggerNotification("ERROR Market TP SL, FIX manually " + err.Error())
 		}
 		return
 	}

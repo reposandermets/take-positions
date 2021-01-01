@@ -25,14 +25,14 @@ func (f *Flow) OrderMarket(positionSize int, payload Payload) error {
 		s := res.StatusCode
 		switch {
 		case s >= 500:
-			logger.SendSlackNotification("Position Close http >= 500")
+			logger.SendLoggerNotification("Position Close http >= 500")
 			return fmt.Errorf("server error: %v", s)
 		case s == 429:
 			time.Sleep(10 * time.Second)
-			logger.SendSlackNotification("Position Close http 429")
+			logger.SendLoggerNotification("Position Close http 429")
 			return fmt.Errorf("Margin req http 429: %v", s)
 		case s >= 400:
-			logger.SendSlackNotification("Position Close 4xx")
+			logger.SendLoggerNotification("Position Close 4xx")
 			return stop{fmt.Errorf("client error: %v", s)}
 		default:
 			return nil

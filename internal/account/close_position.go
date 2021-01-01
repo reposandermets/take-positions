@@ -24,14 +24,14 @@ func (f *Flow) ClosePosition(ticker string) error {
 		s := res.StatusCode
 		switch {
 		case s >= 500:
-			logger.SendSlackNotification("ClosePosition http >= 500")
+			logger.SendLoggerNotification("ClosePosition http >= 500")
 			return fmt.Errorf("server error: %v", s)
 		case s == 429:
 			time.Sleep(10 * time.Second)
-			logger.SendSlackNotification("ClosePosition http 429")
+			logger.SendLoggerNotification("ClosePosition http 429")
 			return fmt.Errorf("Margin req http 429: %v", s)
 		case s >= 400:
-			logger.SendSlackNotification("ClosePosition 4xx")
+			logger.SendLoggerNotification("ClosePosition 4xx")
 			return stop{fmt.Errorf("client error: %v", s)}
 		default:
 			return nil

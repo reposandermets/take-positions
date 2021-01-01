@@ -67,17 +67,17 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 			s := res.StatusCode
 			switch {
 			case s >= 500:
-				logger.SendSlackNotification("XBTUSD tradeBins http >= 500")
+				logger.SendLoggerNotification("XBTUSD tradeBins http >= 500")
 				return fmt.Errorf("server error: %v", s)
 			case s == 429:
 				time.Sleep(10 * time.Second)
-				logger.SendSlackNotification("XBTUSD tradeBins http 429")
+				logger.SendLoggerNotification("XBTUSD tradeBins http 429")
 				return fmt.Errorf("Margin req http 429: %v", s)
 			case s >= 400:
-				logger.SendSlackNotification("XBTUSD tradeBins http >= 400")
+				logger.SendLoggerNotification("XBTUSD tradeBins http >= 400")
 				return stop{fmt.Errorf("client error: %v", s)}
 			case tradeBins[0].Close == 0:
-				logger.SendSlackNotification("XBTUSD tradeBins[0].Close is 0")
+				logger.SendLoggerNotification("XBTUSD tradeBins[0].Close is 0")
 				return fmt.Errorf("XBTUSD tradeBins[0].Close is 0")
 			default:
 				return nil
@@ -122,17 +122,17 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 			s := res.StatusCode
 			switch {
 			case s >= 500:
-				logger.SendSlackNotification("ETHUSD tradeBins http >= 500")
+				logger.SendLoggerNotification("ETHUSD tradeBins http >= 500")
 				return fmt.Errorf("server error: %v", s)
 			case s == 429:
 				time.Sleep(10 * time.Second)
-				logger.SendSlackNotification("ETHUSD tradeBins http 429")
+				logger.SendLoggerNotification("ETHUSD tradeBins http 429")
 				return fmt.Errorf("Margin req http 429: %v", s)
 			case s >= 400:
-				logger.SendSlackNotification("ETHUSD tradeBins http >= 400")
+				logger.SendLoggerNotification("ETHUSD tradeBins http >= 400")
 				return stop{fmt.Errorf("client error: %v", s)}
 			case tradeBins[0].Close == 0:
-				logger.SendSlackNotification("ETHUSD tradeBins[0].Close is 0")
+				logger.SendLoggerNotification("ETHUSD tradeBins[0].Close is 0")
 				return fmt.Errorf("ETHUSD tradeBins[0].Close is 0")
 			default:
 				return nil
@@ -175,14 +175,14 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 			s := res.StatusCode
 			switch {
 			case s >= 500:
-				logger.SendSlackNotification("PositionGet http >= 500")
+				logger.SendLoggerNotification("PositionGet http >= 500")
 				return fmt.Errorf("server error: %v", s)
 			case s == 429:
 				time.Sleep(10 * time.Second)
-				logger.SendSlackNotification("PositionGet http 429")
+				logger.SendLoggerNotification("PositionGet http 429")
 				return fmt.Errorf("Margin req http 429: %v", s)
 			case s >= 400:
-				logger.SendSlackNotification("PositionGet http >= 400")
+				logger.SendLoggerNotification("PositionGet http >= 400")
 				return stop{fmt.Errorf("client error: %v", s)}
 			default:
 				return nil
@@ -211,14 +211,14 @@ func (f *Flow) FetchAccountState(symbol string) (accountState AccountState) {
 			s := res.StatusCode
 			switch {
 			case s >= 500:
-				logger.SendSlackNotification("Margin req http >= 500")
+				logger.SendLoggerNotification("Margin req http >= 500")
 				return fmt.Errorf("server error: %v", s)
 			case s == 429:
 				time.Sleep(10 * time.Second)
-				logger.SendSlackNotification("Margin req http 429")
+				logger.SendLoggerNotification("Margin req http 429")
 				return fmt.Errorf("Margin req http 429: %v", s)
 			case s >= 400:
-				logger.SendSlackNotification("Margin req http >= 400")
+				logger.SendLoggerNotification("Margin req http >= 400")
 				return stop{fmt.Errorf("client error: %v", s)}
 			default:
 				return nil

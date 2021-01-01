@@ -18,7 +18,7 @@ func (f *Flow) OrderSlTp(accountState AccountState, sl float64, tp float64) erro
 	fullOrderQtyAbs := math.Abs(float64(accountState.Position.CurrentQty))
 	tpQty := math.Floor(fullOrderQtyAbs / 3.3)
 
-	logger.SendSlackNotification("INFO TP1: " + fmt.Sprintf("%g", tpQty) + " contracts at " + fmt.Sprintf("%g", tp) +
+	logger.SendLoggerNotification("INFO TP1: " + fmt.Sprintf("%g", tpQty) + " contracts at " + fmt.Sprintf("%g", tp) +
 		" SL: " + fmt.Sprintf("%g", fullOrderQtyAbs) + " contracts at " + fmt.Sprintf("%g", sl))
 
 	var positionId string
@@ -57,14 +57,14 @@ func (f *Flow) OrderSlTp(accountState AccountState, sl float64, tp float64) erro
 		s := res.StatusCode
 		switch {
 		case s >= 500:
-			logger.SendSlackNotification("OrderSlTp http >= 500")
+			logger.SendLoggerNotification("OrderSlTp http >= 500")
 			return fmt.Errorf("server error: %v", s)
 		case s == 429:
 			time.Sleep(10 * time.Second)
-			logger.SendSlackNotification("OrderSlTp http 429")
+			logger.SendLoggerNotification("OrderSlTp http 429")
 			return fmt.Errorf("Margin req http 429: %v", s)
 		case s >= 400:
-			logger.SendSlackNotification("OrderSlTp 4xx")
+			logger.SendLoggerNotification("OrderSlTp 4xx")
 			return stop{fmt.Errorf("client error: %v", s)}
 		default:
 			return nil
