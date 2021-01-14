@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/reposandermets/take-positions/internal/logger"
+	"github.com/spf13/viper"
 )
 
 func FormatFloat(num float64) string {
@@ -19,7 +20,8 @@ func FormatFloat(num float64) string {
 }
 
 func CalculatePositionSize(accountState AccountState, payload Payload) (positionSize int) {
-	xbtWallet := float64(accountState.Margin.WalletBalance) / 100000000
+	xbtWallet := viper.GetFloat64("XBT_WALLET")
+	// xbtWallet := float64(accountState.Margin.WalletBalance) / 100000000
 	atrSl := payload.AtrSl
 	equity := xbtWallet * accountState.TradeBin.Close
 	riskAllowed := payload.Risk
